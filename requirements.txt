@@ -3,3 +3,7 @@
 requests
 gTTS
 playsound
+streamlit
+pymysql
+pandas
+python-dotenv
