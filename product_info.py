@@ -42,7 +42,6 @@ def get_nutrition_info_by_report_no(report_no, api_key):
         'returnType' : 'json',
         'numOfRows' : '1'
     }
-    
     try:
         response = requests.get(url, params=params, timeout=10)
         if response.status_code == 200:
@@ -63,6 +62,7 @@ def get_nutrition_info_by_report_no(report_no, api_key):
                     "nutrient": nutrient,
                     "allergy": allergy
                 }
+                print(product_info)
                 return product_info
             else:
                 print(f"'{report_no}'에 대한 정보가 없습니다.")
