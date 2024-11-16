@@ -87,19 +87,21 @@ def get_nutrition_info_by_report_no(report_no, api_key):
 def parse_nutrient_string(nutrient_str):
     """
     'nutrient' 문자열을 파싱하여 딕셔너리로 변환하는 함수
-    필요한 영양성분: 열량, 탄수화물, 단백질, 지방
+    필요한 영양성분: 열량, 탄수화물, 단백질, 지방, 나트륨, 포화지방
     """
     nutrient_dict = {}
     key_mapping = {
         "열량": "energy_kcal",
         "탄수화물": "carbohydrates",
         "단백질": "proteins",
-        "지방": "fat"
+        "지방": "fat",
+        "나트륨": "sodium",
+        "포화지방": "saturated_fat"
     }
     
     for korean, english in key_mapping.items():
         # '열량 500kcal' 형식으로 추출
-        pattern = rf"{korean}\s+([\d,]+(?:\.\d+)?)\s*([kK][cC][aA][lL]|[gG])"
+        pattern = rf"{korean}\s+([\d,]+(?:\.\d+)?)\s*([kK][cC][aA][lL]|[gG]|[mM][gG])"
         match = re.search(pattern, nutrient_str)
         if match:
             number = match.group(1).replace(',', '')  # 쉼표 제거

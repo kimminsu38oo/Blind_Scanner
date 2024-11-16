@@ -1,66 +1,59 @@
-# db_manage.py
 import streamlit as st
-import pandas as pd
-import os
 from dotenv import load_dotenv
-from contextlib import contextmanager
-from db_utils import get_db_cursor
 import re
+
+from db_utils import insert_allergy_info, delete_allergy_info, get_allergy_info_grouped, insert_user_info
+
+# 하드코딩된 사용자 정보 (김민수)
+name = "강건"
 
 # 환경 변수 로드
 load_dotenv()
 
-# 알레르기 정보 삽입 함수
-def insert_allergy_info(allergen, risk_level):
-    with get_db_cursor() as cursor:
-        sql = """
-            INSERT INTO allergy_info (allergen, risk_level) 
-            VALUES (%s, %s) 
-            ON DUPLICATE KEY UPDATE risk_level = VALUES(risk_level)
-        """
-        cursor.execute(sql, (allergen, risk_level))
-
-# 알레르기 정보 삭제 함수
-def delete_allergy_info(allergen):
-    with get_db_cursor() as cursor:
-        sql = "DELETE FROM allergy_info WHERE allergen = %s"
-        cursor.execute(sql, (allergen,))
-
-# 알레르기 정보 그룹 조회 함수
-def get_allergy_info_grouped():
-    with get_db_cursor() as cursor:
-        sql = "SELECT allergen, risk_level FROM allergy_info ORDER BY risk_level"
-        cursor.execute(sql)
-        result = cursor.fetchall()
-    
-    # DataFrame으로 변환하여 그룹별로 나눔
-    df = pd.DataFrame(result)
-    if not df.empty:
-        grouped = {
-            "High Risk Group": df[df['risk_level'] == 'High Risk Group'],
-            "Risk Group": df[df['risk_level'] == 'Risk Group'],
-            "Caution Group": df[df['risk_level'] == 'Caution Group']
-        }
-    else:
-        grouped = {
-            "High Risk Group": pd.DataFrame(),
-            "Risk Group": pd.DataFrame(),
-            "Caution Group": pd.DataFrame()
-        }
-    return grouped
-
-# 입력값 검증 함수
+# 입력값 검증 함수 (변경 없음)
 def validate_allergen(allergen):
-    # 허용할 문자 패턴 정의 (알파벳, 한글, 공백, 하이픈, 슬래시)
     pattern = re.compile(r'^[A-Za-z가-힣\s\-\/]+$')
     return bool(pattern.match(allergen))
 
-# 페이지 새로고침을 위한 세션 상태 초기화
-if 'refresh' not in st.session_state:
-    st.session_state.refresh = False
+
+def toggle_refresh():
+    """refresh 상태를 토글하는 함수"""
+    if 'refresh' not in st.session_state:
+        st.session_state.refresh = False
+    st.session_state.refresh = not st.session_state.refresh
+
 
 # Streamlit 앱 구성
 st.title("알레르기 정보 관리")
+
+# **사이드바에 내 정보 입력 섹션 (여닫기 기능 추가)**
+with st.sidebar:
+    st.header("내 정보")
+    
+    # 사이드바에서 여닫는 식으로 사용자 정보 입력
+    with st.expander("사용자 정보 입력", expanded=True):  # expanded=True로 기본적으로 펼쳐진 상태로 설정
+        input_weight = st.text_input("체중 (kg)")
+        input_height = st.text_input("신장 (cm)")
+        input_age = st.text_input("나이")
+        input_gender = st.selectbox("성별", ["male", "female"])
+        input_activity_level = st.selectbox("활동 수준", ["비활동적", "저활동적", "활동적", "매우활동적", "극도활동적"])
+
+        if st.button("사용자 정보 저장"):
+            if all([input_weight, input_height, input_age, input_gender, input_activity_level]):
+                try:
+                    insert_user_info(
+                        name=name,  # 하드코딩된 '김민수' 사용
+                        weight=input_weight,
+                        height=input_height,
+                        age=input_age,
+                        gender=input_gender,
+                        activity_level=input_activity_level
+                    )
+                    st.success("사용자 정보가 저장되었습니다!")
+                except Exception as e:
+                    st.error(f"저장 중 오류가 발생했습니다: {str(e)}")
+            else:
+                st.error("모든 필드를 입력해주세요.")
 
 # **1. 알레르기 정보 입력 섹션**
 st.subheader("알레르기 정보 입력")
@@ -70,10 +63,10 @@ risk_level = st.selectbox("위험 그룹을 선택하세요", ("High Risk Group"
 if st.button("알레르기 정보 추가"):
     if allergen and risk_level:
         if validate_allergen(allergen):
-            insert_allergy_info(allergen, risk_level)
+            insert_allergy_info(name, allergen, risk_level)
             st.success("알레르기 정보가 추가되었습니다!")
             # 데이터 업데이트를 위해 페이지 상태 변경
-            st.session_state.refresh = not st.session_state.refresh
+            toggle_refresh()  # 함수 호출
         else:
             st.error("알레르기 성분에 유효하지 않은 문자가 포함되어 있습니다.")
     else:
@@ -85,7 +78,7 @@ st.markdown("---")
 st.subheader("저장된 알레르기 정보 목록")
 
 # 그룹별로 알레르기 정보 가져오기
-allergy_data_grouped = get_allergy_info_grouped()
+allergy_data_grouped = get_allergy_info_grouped(name)
 
 # 그룹별로 테이블 및 삭제 버튼 표시
 for group, data in allergy_data_grouped.items():
@@ -99,9 +92,9 @@ for group, data in allergy_data_grouped.items():
                 # 고유한 키를 생성하기 위해 그룹과 인덱스를 포함
                 button_key = f"delete_{group}_{index}"
                 if st.button("삭제", key=button_key):
-                    delete_allergy_info(row['allergen'])
+                    delete_allergy_info(name, row['allergen'])
                     st.success(f"{row['allergen']} 항목이 삭제되었습니다!")
                     # 데이터 업데이트를 위해 페이지 상태 변경
-                    st.session_state.refresh = not st.session_state.refresh
+                    toggle_refresh()  # 함수 호출
     else:
         st.write("해당 그룹에 저장된 알레르기 정보가 없습니다.")
