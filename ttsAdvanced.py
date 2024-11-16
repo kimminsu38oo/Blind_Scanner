@@ -1,3 +1,25 @@
+"""
+Directory Structure:
+sound_cache/
+├── daily_ratio/          # 일일 섭취 비율 음성 캐시 (숫자는 섭취 비율을 나타냄)
+│   └── *.mp3            # 예: 167805400.mp3 - 167% 섭취 비율을 의미
+│
+├── ingredients/          # 알레르기 성분 음성 캐시
+│   └── *.mp3            # 알레르기 성분명 (예: chicken.mp3)
+│
+├── product/             # 제품 정보 음성 캐시
+│   └── *.mp3            # 제품 바코드 기반 파일명
+│
+└── warnings/            # 위험 수준 경고 음성
+   ├── base_warning.mp3 # 기본 경고
+   ├── caution.mp3      # 주의 
+   ├── high_risk.mp3    # 고위험
+   └── risk.mp3         # 위험
+
+참고: daily_ratio의 파일명에서 숫자는 백분율을 나타냄 (소수점 제외)
+예시) 167805400.mp3 = 167% 섭취 비율
+"""
+
 import boto3
 import os
 from playsound import playsound
@@ -58,19 +80,47 @@ def speak_product_info(barcode, product_name, nutrient):
     # product 디렉토리에 저장하고 재생
     audio_file_name = f"{barcode}_product.mp3"
 
-    # 영양 정보 구성
-    sodium = nutrient.get('sodium', None)
-    saturated_fat = nutrient.get('saturated_fat', None)
-    energy_kcal = nutrient.get('energy_kcal', None)
-
-    if sodium is not None:
-        product_text += f"나트륨 {sodium}, "
-    if saturated_fat is not None:
-        product_text += f"포화지방 {saturated_fat}, "
-    if energy_kcal is not None:
-        product_text += f"열량 {energy_kcal} 입니다. "
-
     text_to_speak_adv(audio_file_name, product_text, "product")
+
+
+def speak_daily_nutrients(nutrient_ratios):
+    """
+    일일 영양소 섭취 비율을 음성으로 변환하는 함수
+    
+    Parameters:
+    - nutrient_ratios: 각 영양소의 일일 섭취 비율(%)을 담은 딕셔너리
+    
+    """
+    # 영양소 비율 텍스트 구성
+    daily_text = "일일 섭취 비율은, "
+
+    # 각 영양소 비율 추출 (소수점 제거를 위해 정수 변환)
+    energy_ratio = int(nutrient_ratios.get('energy_kcal', 0))
+    sodium_ratio = int(nutrient_ratios.get('sodium', 0))
+    sugar_ratio = int(nutrient_ratios.get('sugar', 0))
+    saturated_ratio = int(nutrient_ratios.get('saturated_fat', 0))
+    trans_ratio = int(nutrient_ratios.get('trans_fat', 0))
+
+    # 파일명 구성 (비율을 2자리 숫자로 변환)
+    file_name = f"{energy_ratio:02d}{sodium_ratio:02d}{sugar_ratio:02d}{saturated_ratio:02d}{trans_ratio:02d}.mp3"
+
+    # 텍스트 구성
+    if energy_ratio > 0:
+        daily_text += f"열량 {energy_ratio}%, "
+    if sodium_ratio > 0:
+        daily_text += f"나트륨 {sodium_ratio}%, "
+    if sugar_ratio > 0:
+        daily_text += f"당류 {sugar_ratio}%, "
+    if saturated_ratio > 0:
+        daily_text += f"포화지방 {saturated_ratio}%, "
+    if trans_ratio > 0:
+        daily_text += f"트랜스지방 {trans_ratio}% 입니다."
+
+    # 음성 파일 생성 및 저장
+    text_to_speak_adv(file_name, daily_text, "daily_ratio")
+
+
+
 
 
 def get_allergen_filename(allergen):
@@ -85,6 +135,7 @@ def get_allergen_filename(allergen):
         "계란": "egg",
         "생선": "fish",
         "조개류": "shellfish",
+        "닭고기" : "chicken"
         # 필요한 매핑 추가
     }
     return allergen_mapping.get(allergen, f"allergen_{hash(allergen)}")

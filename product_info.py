@@ -45,13 +45,10 @@ def get_nutrition_info_by_report_no(report_no, api_key):
     
     try:
         response = requests.get(url, params=params, timeout=10)
-        print("\n2. 요청 url: ", response.url)
         if response.status_code == 200:
             data = response.json()
-            print("응답 데이터:", json.dumps(data, indent=2, ensure_ascii=False))  # 전체 응답 데이터 출력
             if 'body' in data and 'items' in data['body'] and len(data['body']['items']) > 0:
                 item = data['body']['items'][0]['item']
-                print("Item 내용:", json.dumps(item, indent=2, ensure_ascii=False))  # item 내용 출력
                 # 'nutrient' 필드가 문자열인지 확인
                 nutrient_str = item.get('nutrient', "알레르기 정보 없음")
                 allergy = item.get('allergy', "알레르기 정보 없음")
@@ -86,8 +83,8 @@ def get_nutrition_info_by_report_no(report_no, api_key):
 
 def parse_nutrient_string(nutrient_str):
     """
-    'nutrient' 문자열을 파싱하여 딕셔너리로 변환하는 함수
-    필요한 영양성분: 열량, 탄수화물, 단백질, 지방, 나트륨, 포화지방
+    'nutrient' 문자열을 파싱하여 숫자값만 딕셔너리로 변환하는 함수
+    필요한 영양성분: 열량, 탄수화물, 단백질, 지방, 나트륨, 포화지방, 당류, 트랜스지방
     """
     nutrient_dict = {}
     key_mapping = {
@@ -96,18 +93,39 @@ def parse_nutrient_string(nutrient_str):
         "단백질": "proteins",
         "지방": "fat",
         "나트륨": "sodium",
-        "포화지방": "saturated_fat"
+        "포화지방": "saturated_fat",
+        "당류": "sugar",
+        "트랜스지방": "trans_fat"
     }
     
     for korean, english in key_mapping.items():
-        # '열량 500kcal' 형식으로 추출
-        pattern = rf"{korean}\s+([\d,]+(?:\.\d+)?)\s*([kK][cC][aA][lL]|[gG]|[mM][gG])"
+        # 숫자만 추출 (정수 또는 소수점)
+        pattern = rf"{korean}\s+([\d,]+(?:\.\d+)?)"
         match = re.search(pattern, nutrient_str)
         if match:
-            number = match.group(1).replace(',', '')  # 쉼표 제거
-            unit = match.group(2)
-            nutrient_dict[english] = f"{number}{unit}"
+            # 쉼표 제거하고 실수형으로 변환
+            value = float(match.group(1).replace(',', ''))
+            nutrient_dict[english] = value
         else:
-            nutrient_dict[english] = "정보 없음"
+            nutrient_dict[english] = 0  # 또는 'None' 또는 '정보 없음' 선택 가능
     
     return nutrient_dict
+
+
+def get_nutrient_info(nutrient):
+    """
+    주요 영양소 정보를 수집하여 하나의 딕셔너리로 반환하는 함수
+    
+    Parameters:
+    - nutrient (dict): 원본 영양소 정보를 담고 있는 딕셔너리
+    
+    Returns:
+    - dict: 주요 영양소 정보만 선별하여 담은 딕셔너리
+    """
+    return {
+        'energy_kcal': nutrient.get('energy_kcal', '정보 없음'),
+        'sodium': nutrient.get('sodium', '정보 없음'),
+        'saturated_fat': nutrient.get('saturated_fat', '정보 없음'),
+        'trans_fat': nutrient.get('trans_fat', '정보 없음'),
+        'sugar': nutrient.get('sugar', '정보 없음')
+    }

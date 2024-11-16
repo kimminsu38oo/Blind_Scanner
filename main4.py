@@ -1,11 +1,11 @@
-from product_info import get_product_info_by_barcode, get_nutrition_info_by_report_no
+from product_info import get_product_info_by_barcode, get_nutrition_info_by_report_no, get_nutrient_info
 import os
 from dotenv import load_dotenv
 import re
 from db_utils import get_allergens_risk_levels, get_user_info  # 사용자 정보 가져오는 함수 추가
 import sys
-from ttsAdvanced import speak_allergen_info, speak_product_info, speak_base_warning
-from calculate import calculate_bmr,get_activity_multiplier, calculate_daily_nutrients
+from ttsAdvanced import speak_allergen_info, speak_product_info, speak_base_warning, speak_daily_nutrients
+from calculate import calculate_daily_nutrients, calculate_daily_nutrient_ratio
 
 
 
@@ -17,7 +17,7 @@ def main():
     api_key_detail = os.getenv('API_KEY_DETAIL')  # 성분 정보 API 키
     
     # user 정보
-    user_name = "강건"  # 고정된 사용자 이름
+    user_name = "나경훈"  # 고정된 사용자 이름
 
     # DB에서 사용자 정보 가져오기
     user_info = get_user_info(user_name)
@@ -33,15 +33,19 @@ def main():
         daily_nutrients = calculate_daily_nutrients(weight, height, age, gender, activity_level)
         
         # 결과 출력
-        print(f"\n{user_name}의 일일 영양소 권장량:")
-        print(f"칼로리: {daily_nutrients['daily_calories']} kcal")
-        print(f"나트륨: {daily_nutrients['sodium_mg']} mg")
-        print(f"첨가당: {daily_nutrients['added_sugar_g']} g")
-        print(f"포화지방: {daily_nutrients['saturated_fat_g']} g")
-        print(f"트랜스지방: {daily_nutrients['trans_fat_g']} g")
+        print(f"\n=== {user_name}의 일일 영양소 권장량 ===")
+        print(f"칼로리: {daily_nutrients['energy_kcal']} kcal")
+        print(f"나트륨: {daily_nutrients['sodium']} mg")
+        print(f"첨가당: {daily_nutrients['sugar']} g")
+        print(f"포화지방: {daily_nutrients['saturated_fat']} g")
+        print(f"트랜스지방: {daily_nutrients['trans_fat']} g")
     else:
         print(f"{user_name}의 정보를 찾을 수 없습니다。")
     
+
+
+        
+
     while True:
         # 바코드 입력 받기
         barcode = input("바코드를 입력하세요: ").strip()
@@ -78,17 +82,40 @@ def main():
         nutrient = detail_info.get("nutrient", {})
         allergy_info = detail_info.get("allergy", "알레르기 정보 없음")
         
-        # 3. 영양 정보 출력
-        print("\n3. 영양 정보:")
-        print(f"   - 열량: {nutrient.get('energy_kcal', '정보 없음')}")
-        print(f"   - 탄수화물: {nutrient.get('carbohydrates', '정보 없음')}")
-        print(f"   - 단백질: {nutrient.get('proteins', '정보 없음')}")
-        print(f"   - 지방: {nutrient.get('fat', '정보 없음')}")
-        print(f"   - 나트륨, {nutrient.get('sodium', '정보 없음')}")
-        print(f"   - 포화지방, {nutrient.get('saturated_fat', '정보 없음')}")
 
-        # 제품명, 영양 정보 출력
+        # 제품명, 영양 정보 출력 --> 이부분 제품 명만 출력하도록 변경
         speak_product_info(barcode, product_name, nutrient) 
+
+        # 열량, 나트륨, 포화지방, 당류, 트랜스지방 가져오는 함수
+        selected_nutrients = get_nutrient_info(nutrient)
+
+        print("=== 선택된 제품의 영양성분 ===")
+        print(f"열량: {selected_nutrients['energy_kcal']}kcal")
+        print(f"나트륨: {selected_nutrients['sodium']}mg")
+        print(f"당류: {selected_nutrients['sugar']}g")
+        print(f"포화지방: {selected_nutrients['saturated_fat']}g")
+        print(f"트랜스지방: {selected_nutrients['trans_fat']}g")
+        print("===========================")
+
+
+        # 각각의 비율을 구하는 함수
+        nutrient_ratios = calculate_daily_nutrient_ratio(selected_nutrients, daily_nutrients) # selected / daily * 100 = 비율
+        
+
+        
+        print("=== 일일 영양성분 섭취 비율 ===")
+        print(f"열량: {nutrient_ratios['energy_kcal']}%")
+        print(f"나트륨: {nutrient_ratios['sodium']}%")
+        print(f"당류: {nutrient_ratios['sugar']}%")
+        print(f"포화지방: {nutrient_ratios['saturated_fat']}%")
+        print(f"트랜스지방: {nutrient_ratios['trans_fat']}%")
+        print("===========================")
+
+        # 출력
+        speak_daily_nutrients(nutrient_ratios)
+        
+
+
 
 
         if allergy_info == "알레르기 정보 없음":
