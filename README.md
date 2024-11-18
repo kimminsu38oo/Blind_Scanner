@@ -87,7 +87,7 @@ Item 내용: {
 
 5. 알레르기 정보:
  - 계란: 주의! 위험 알레르기 성분이 포함되어 있습니다.
- - 우유: 주 git init  필요한 알레르기 성분이 포함되어 있습니다.
+ - 우유: 주 필요한 알레르기 성분이 포함되어 있습니다.
 
 
 
@@ -98,4 +98,16 @@ Item 내용: {
 
 
 
+## main 실행 결과
+![main실행 결과](./readmeref/main4.png)
 
+## 음성파일 캐싱
+![audio dir](./readmeref/audioCaching.png)
+
+## 시연 영상
+<video width="320" height="240" controls>
+  <source src="./readmeref/jinramen.mp4" type="video/mp4">
+  브라우저가 비디오 태그를 지원하지 않습니다.
+</video>
+
+![우수상](./readmeref/2.jpg)

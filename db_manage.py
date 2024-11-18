@@ -5,7 +5,7 @@ import re
 from db_utils import insert_allergy_info, delete_allergy_info, get_allergy_info_grouped, insert_user_info
 
 # 하드코딩된 사용자 정보 (김민수)
-name = "mingyu"
+name = "나경훈"
 
 # 환경 변수 로드
 load_dotenv()

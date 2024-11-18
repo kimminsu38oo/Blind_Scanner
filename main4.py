@@ -129,7 +129,8 @@ def main():
         if allergens:
             # 데이터베이스에 등록된 알레르기 성분과 비교
             risk_levels = get_allergens_risk_levels(user_name, allergens)
-            
+            print(allergens)
+
             # 등록된 알레르기 성분만 필터링
             registered_allergens = {allergen: risk_levels[allergen] for allergen in allergens if allergen in risk_levels}
             

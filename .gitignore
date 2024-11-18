@@ -9,9 +9,8 @@ __pycache__/
 *.log
 *.sqlite3
 
-*.cache
+
 
 myenv/
 
 # Sound cache directory
-sound_cache/
