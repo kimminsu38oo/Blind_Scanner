@@ -104,6 +104,9 @@ Item 내용: {
 ## 음성파일 캐싱
 ![audio dir](./readmeref/audioCaching.png)
 
+## 흐름도
+![flow](./readmeref/구성도.png)
+
 ## 시연 영상
 <video width="320" height="240" controls>
   <source src="./readmeref/jinramen.mp4" type="video/mp4">
