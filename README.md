@@ -117,6 +117,9 @@ Item 내용: {
 
 ![image 2](https://github.com/user-attachments/assets/6bd7fd10-9f5e-441b-90da-b6fe68593466)
 
+## DB
+![main실행 결과](./readmeref/diagram.png)
+
 
 
 ## main 실행 결과
